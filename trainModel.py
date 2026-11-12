@@ -27,3 +27,27 @@ ava_test_set = ava_files[int(0.8*len(ava_files)):]
 
 print(len(ava_train_set))
 print(len(ava_test_set))
+
+eq_files = []
+with open("eq_files.txt", "r") as text:
+    for line in text:
+        eq_files.append(line) # Make list of all eq files
+
+# Split up earthquake data into training and testing sets
+eq_train_set = eq_files[0:int(0.8*len(eq_files))]
+eq_test_set = eq_files[int(0.8*len(eq_files)):]
+
+print(len(eq_train_set))
+print(len(eq_test_set))
+
+noise_files = []
+with open("noise_files.txt", "r") as text:
+    for line in text:
+        noise_files.append(line) # Make list of all noise files
+
+# Split up noise data into training and testing sets
+noise_train_set = noise_files[0:int(0.8*len(noise_files))]
+noise_test_set = noise_files[int(0.8*len(noise_files)):]
+
+print(len(noise_train_set))
+print(len(noise_test_set))
