@@ -8,8 +8,8 @@ dir_path1 = "dischma_data/season_2020_21/CS"
 dir_path2 = "dischma_data/season_2021_22/CS"
 
 # Create list of .mseed files
-file_list1 = os.listdir(dir_path1)
-file_list2 = os.listdir(dir_path2)
+file_list1 = sorted(os.listdir(dir_path1))
+file_list2 = sorted(os.listdir(dir_path2))
 
 # Load labels.csv file
 csv_labels = pd.read_csv("dischma_data/labels.csv")
@@ -52,5 +52,6 @@ print(f'Wrote {len(eq_files)} earthquake file pathes to "eq_files.txt"')
 
 with open("ava_files.txt", "w") as ava_file:
     for file in ava_files:
-        ava_file.write(file + "\n")
+        ava_file.write(file)
+        ava_file.write("\n")
 print(f'Wrote {len(ava_files)} avalanche file pathers to "ava_files.txt"')
