@@ -4,7 +4,8 @@ import obspy
 from sklearn.model_selection import train_test_split
 import random
 
-WINDOW_SIZE = 10000
+WINDOW_SIZE = 1000
+WINDOW_CROSSOVER = 0.3
 TEST_SIZE = 0.2 # percentage of data to test with (rest will train model)
 random.seed(42)
 
@@ -33,7 +34,7 @@ def create_windows(data):
     """
     windows = []
 
-    for i in range(0, len(data)-WINDOW_SIZE+1, WINDOW_SIZE):
+    for i in range(0, len(data)-WINDOW_SIZE+1, int(WINDOW_SIZE*(1-WINDOW_CROSSOVER))):
         window = data[i:i+WINDOW_SIZE]
         
         # Normalize windows
@@ -133,7 +134,7 @@ for file in noise_test_set:
 train_windows, train_labels = [],[]
 for i in range(len(ava_train_data)):
     windows = create_windows(ava_train_data[i])
-    for window in windows:
+    for window in windows: 
         train_windows.append(window)
         train_labels.append(AVA_LABEL)
 for i in range(len(eq_train_data)):
@@ -197,13 +198,13 @@ model = tf.keras.Sequential([
 
     tf.keras.layers.Dense(32, activation="relu"),
 
-    tf.keras.layers.Dense(1, activation="sigmoid")
+    tf.keras.layers.Dense(3, activation="softmax")
 ])
 
 # Compile model
 model.compile(
-    optimizer="adam",
-    loss="binary_crossentropy",
+    optimizer=tf.keras.optimizers.Adam(learning_rate=1e-3),
+    loss="sparse_categorical_crossentropy",
     metrics=["accuracy"]
 )
 
