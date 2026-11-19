@@ -168,10 +168,21 @@ for i in range(len(noise_test_data)):
     for window in windows:
         test_windows.append(window)
         test_labels.append(NOISE_LABEL)
-
 test_windows = np.array(test_windows, dtype=np.float32)
 test_labels = np.array(test_labels, dtype=np.int32)
 
+# Implement Class Imbalance
+from sklearn.utils.class_weight import compute_class_weight
+w = compute_class_weight('balanced', classes=np.unique(y_train),y=y_train)
+class_weight = dict(enumerate(w))
+
+callbacks = [
+    tf.keras.callbacks.EarlyStopping(patience=10, restore_best_weights=True),
+    tf.keras.callbacks.ReduceLROnPlateau(factor=0.5, patience=4)
+]
+
+model.fit=(X_train, y_train, validation_data=(X_val, y_val),
+epochs=100, batch_size=32, class_weight=class_weight, callbacks=callbacks)
 
 # Create model
 model = tf.keras.Sequential([
@@ -221,3 +232,11 @@ history = model.fit(
 loss, accuracy = model.evaluate(test_windows, test_labels)
 
 print("Test accuracy:", accuracy)
+
+# Evaluate model based on class not accuracy
+
+from sklearn.metrics import classification_report, confusion_matrix
+pred = model.predict(X_test), argmax(axis=1)
+
+print(classification_report(y_test,pred,target_names=['noise', 'earthquake', 'avalanche']))
+print(confusion_matrix(y_test,pred))
