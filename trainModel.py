@@ -5,6 +5,7 @@ from sklearn.model_selection import train_test_split
 from sklearn.utils.class_weight import compute_class_weight
 from sklearn.metrics import classification_report, confusion_matrix
 import random
+import metrics as m
 
 WINDOW_SIZE = 10000
 WINDOW_CROSSOVER = 0.3
@@ -240,7 +241,10 @@ model = tf.keras.Sequential([
 model.compile(
     optimizer=tf.keras.optimizers.Adam(learning_rate=1e-3),
     loss="sparse_categorical_crossentropy",
-    metrics=["accuracy"]
+    metrics=["accuracy",
+             m.ClassF1(class_id=NOISE_LABEL, name="noise_F1"),
+             m.ClassF1(class_id=AVA_LABEL, name="avalanche_F1"),
+             m.ClassF1(class_id=EQ_LABEL, name="earthquake_F1")],
 )
 
 # Train model
