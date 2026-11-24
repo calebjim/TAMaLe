@@ -2,9 +2,11 @@ import tensorflow as tf
 import numpy as np
 import obspy
 from sklearn.model_selection import train_test_split
+from sklearn.utils.class_weight import compute_class_weight
+from sklearn.metrics import classification_report, confusion_matrix
 import random
 
-WINDOW_SIZE = 1000
+WINDOW_SIZE = 10000
 WINDOW_CROSSOVER = 0.3
 TEST_SIZE = 0.2 # percentage of data to test with (rest will train model)
 random.seed(42)
@@ -168,21 +170,43 @@ for i in range(len(noise_test_data)):
     for window in windows:
         test_windows.append(window)
         test_labels.append(NOISE_LABEL)
+
 test_windows = np.array(test_windows, dtype=np.float32)
 test_labels = np.array(test_labels, dtype=np.int32)
 
 # Implement Class Imbalance
-from sklearn.utils.class_weight import compute_class_weight
-w = compute_class_weight('balanced', classes=np.unique(y_train),y=y_train)
+w = compute_class_weight('balanced', classes=np.unique(train_labels), y=train_labels)
 class_weight = dict(enumerate(w))
 
-callbacks = [
-    tf.keras.callbacks.EarlyStopping(patience=10, restore_best_weights=True),
-    tf.keras.callbacks.ReduceLROnPlateau(factor=0.5, patience=4)
-]
+print("Class Weights:", class_weight)
 
-model.fit=(X_train, y_train, validation_data=(X_val, y_val),
-epochs=100, batch_size=32, class_weight=class_weight, callbacks=callbacks)
+callbacks = [
+
+    # Stop training if validation loss stops improving
+    tf.keras.callbacks.EarlyStopping(
+        monitor="val_loss",
+        patience=7, 
+        restore_best_weights=True,
+        verbose=1
+    ),
+    
+    # Save the best model
+    tf.keras.callbacks.ModelCheckpoint(
+        filepath="best_seismic_model.keras",
+        monitor="val_loss",
+        save_best_only=True,
+        verbose=1
+    ),
+
+    # Reduce learning rate when progress plateaus
+    tf.keras.callbacks.ReduceLROnPlateau(
+        monitor="val_loss",
+        factor=0.5, 
+        patience=3,
+        min_lr=0.00001,
+        verbose=1
+    )
+]
 
 # Create model
 model = tf.keras.Sequential([
@@ -223,9 +247,11 @@ model.compile(
 history = model.fit(
     train_windows,
     train_labels,
-    epochs=30,
+    epochs=100,
     batch_size=32,
-    validation_split=0.2
+    validation_split=0.2,
+    class_weight=class_weight,
+    #callbacks=callbacks
 )
 
 # Evaluate model
@@ -234,9 +260,21 @@ loss, accuracy = model.evaluate(test_windows, test_labels)
 print("Test accuracy:", accuracy)
 
 # Evaluate model based on class not accuracy
+pred = model.predict(test_windows).argmax(axis=1)
 
-from sklearn.metrics import classification_report, confusion_matrix
-pred = model.predict(X_test), argmax(axis=1)
+print(classification_report(test_labels, pred, target_names=['Noise', 'Avalanche', 'Earthquake']))
+print(confusion_matrix(test_labels,pred))
 
-print(classification_report(y_test,pred,target_names=['noise', 'earthquake', 'avalanche']))
-print(confusion_matrix(y_test,pred))
+"""
+# Convert to tensorflow lite
+converter = tf.lite.TFLiteConverter.from_keras_model(model)
+
+converter.optimixations = [
+        tf.lite.Optimize.DEFAULT
+    ]
+
+tflite_model = converter.convert()
+
+with open("seismic_classifier.tflite", "wb") as file:
+    file.write(tflite_model)
+"""
